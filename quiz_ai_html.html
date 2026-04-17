@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz — Fondamenti dell'Intelligenza Artificiale</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #F5F4F0; color: #1a1a1a; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem 4rem; }
+    .card { background: #fff; border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.07); max-width: 680px; width: 100%; padding: 2rem 2rem 2.5rem; }
+    .header { margin-bottom: 2rem; }
+    .tag { display: inline-block; background: #EEEDFE; color: #534AB7; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 99px; margin-bottom: 0.75rem; }
+    h1 { font-size: 22px; font-weight: 600; color: #1a1a1a; line-height: 1.3; margin-bottom: 0.25rem; }
+    .subtitle { font-size: 14px; color: #6b6b6b; }
+    .progress-wrap { margin-bottom: 1.75rem; }
+    .progress-meta { display: flex; justify-content: space-between; font-size: 13px; color: #6b6b6b; margin-bottom: 8px; }
+    .progress-track { background: #EEEDFE; border-radius: 99px; height: 6px; overflow: hidden; }
+    .progress-fill { height: 6px; background: linear-gradient(90deg, #7F77DD, #534AB7); border-radius: 99px; transition: width 0.4s ease; }
+    .q-text { font-size: 17px; font-weight: 500; color: #1a1a1a; margin-bottom: 1.25rem; line-height: 1.55; }
+    .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.25rem; }
+    .opt { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border: 1.5px solid #e8e8e8; border-radius: 12px; cursor: pointer; transition: border-color 0.15s, background 0.15s; background: #fff; }
+    .opt:hover { border-color: #AFA9EC; background: #FAFAFE; }
+    .opt.selected { border-color: #7F77DD; background: #EEEDFE; }
+    .opt.correct { border-color: #1D9E75; background: #E1F5EE; }
+    .opt.wrong { border-color: #D85A30; background: #FAECE7; }
+    .opt-letter { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #888; flex-shrink: 0; margin-top: 1px; transition: all 0.15s; }
+    .opt.selected .opt-letter { border-color: #534AB7; color: #534AB7; background: #fff; }
+    .opt.correct .opt-letter { border-color: #1D9E75; color: #fff; background: #1D9E75; }
+    .opt.wrong .opt-letter { border-color: #D85A30; color: #fff; background: #D85A30; }
+    .opt-label { font-size: 15px; color: #1a1a1a; line-height: 1.5; }
+    .feedback { margin-top: 0.5rem; padding: 12px 16px; border-radius: 10px; font-size: 14px; line-height: 1.6; display: none; }
+    .feedback.correct { background: #E1F5EE; color: #085041; border: 1px solid #5DCAA5; display: block; }
+    .feedback.wrong { background: #FAECE7; color: #4A1B0C; border: 1px solid #F0997B; display: block; }
+    .nav { display: flex; justify-content: flex-end; margin-top: 1.5rem; gap: 10px; }
+    .btn { padding: 11px 24px; border-radius: 10px; border: 1.5px solid #e8e8e8; background: #fff; color: #1a1a1a; font-size: 15px; font-family: inherit; cursor: pointer; font-weight: 500; transition: all 0.15s; }
+    .btn:hover { background: #f5f4f0; }
+    .btn-primary { background: #534AB7; color: #fff; border-color: #534AB7; }
+    .btn-primary:hover { background: #3C3489; border-color: #3C3489; }
+    .btn:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+
+    /* Result screen */
+    #result-screen { display: none; }
+    .result-header { text-align: center; padding: 1rem 0 2rem; }
+    .score-circle { width: 120px; height: 120px; border-radius: 50%; border: 3px solid #7F77DD; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
+    .score-num { font-size: 36px; font-weight: 600; color: #534AB7; line-height: 1; }
+    .score-den { font-size: 14px; color: #888; margin-top: 2px; }
+    .result-msg { font-size: 20px; font-weight: 600; color: #1a1a1a; margin-bottom: 0.4rem; }
+    .result-sub { font-size: 15px; color: #6b6b6b; margin-bottom: 1.75rem; }
+    .review { border-top: 1px solid #eee; padding-top: 1.5rem; }
+    .review-title { font-size: 14px; font-weight: 500; color: #888; margin-bottom: 1rem; }
+    .review-item { padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+    .review-q { font-size: 14px; font-weight: 500; color: #1a1a1a; margin-bottom: 5px; }
+    .review-a { font-size: 13px; }
+    .review-a.ok { color: #0F6E56; }
+    .review-a.ko { color: #993C1D; }
+    .review-correct { font-size: 12px; color: #888; margin-top: 3px; }
+    @media (max-width: 500px) {
+      .card { padding: 1.25rem 1.25rem 2rem; }
+      h1 { font-size: 18px; }
+      .q-text { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div id="quiz-screen">
+    <div class="header">
+      <div class="tag">Quiz di verifica</div>
+      <h1>Fondamenti dell'Intelligenza Artificiale</h1>
+      <p class="subtitle">Seleziona la risposta corretta per ogni domanda</p>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span id="q-counter">Domanda 1 di 10</span>
+        <span id="q-score">0 corrette</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="pbar" style="width:10%"></div></div>
+    </div>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="nav">
+      <button class="btn btn-primary" id="btn-confirm" onclick="confirmAnswer()" disabled>Conferma risposta</button>
+      <button class="btn btn-primary" id="btn-next" onclick="nextQ()" style="display:none">Domanda successiva →</button>
+    </div>
+  </div>
+
+  <div id="result-screen">
+    <div class="result-header">
+      <div class="score-circle">
+        <span class="score-num" id="final-score">0</span>
+        <span class="score-den">/ 10</span>
+      </div>
+      <div class="result-msg" id="result-msg"></div>
+      <div class="result-sub" id="result-sub"></div>
+      <button class="btn btn-primary" onclick="restart()">Riprova il quiz</button>
+    </div>
+    <div class="review">
+      <div class="review-title">Riepilogo risposte</div>
+      <div id="review-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const Qs = [
+  {
+    q: "Qual è la definizione più completa di Intelligenza Artificiale?",
+    opts: [
+      "Un programma che esegue calcoli matematici ad alta velocità",
+      "La capacità di una macchina di mostrare capacità umane come ragionamento, apprendimento e creatività",
+      "Un sistema operativo avanzato per computer",
+      "Un database che archivia grandi quantità di informazioni"
+    ],
+    correct: 1,
+    explanation: "L'AI è la capacità di una macchina di simulare capacità umane: ragionamento, apprendimento, creatività e problem-solving."
+  },
+  {
+    q: "Quali sono i tre ingredienti fondamentali alla base dell'intelligenza artificiale moderna?",
+    opts: [
+      "Hardware, software e reti neurali",
+      "Statistica, dati in abbondanza e osservazione del comportamento",
+      "Algoritmi, database e interfacce utente",
+      "Cloud, sensori e automazione"
+    ],
+    correct: 1,
+    explanation: "L'AI moderna si fonda su tre pilastri: la statistica come base matematica, grandi quantità di dati, e l'osservazione del comportamento per addestrare i modelli."
+  },
+  {
+    q: "Cos'è il Machine Learning?",
+    opts: [
+      "Un linguaggio di programmazione per creare robot",
+      "Un sottocampo dell'IA che consente a un computer di imparare dai dati senza essere esplicitamente programmato",
+      "Un sistema per tradurre automaticamente i testi",
+      "Un metodo per aumentare la velocità dei processori"
+    ],
+    correct: 1,
+    explanation: "Il Machine Learning permette ai computer di imparare e migliorare automaticamente attraverso l'esperienza, senza essere programmati per ogni singolo compito."
+  },
+  {
+    q: "Qual è la differenza tra apprendimento supervisionato e non supervisionato?",
+    opts: [
+      "Il supervisionato usa più dati; il non supervisionato ne usa meno",
+      "Il supervisionato impara da dati etichettati; il non supervisionato trova pattern in dati non etichettati",
+      "Il supervisionato funziona online; il non supervisionato offline",
+      "Non c'è differenza: sono due termini per la stessa cosa"
+    ],
+    correct: 1,
+    explanation: "Nel supervisionato il modello apprende da dati con etichette (coppie input-output). In quello non supervisionato trova autonomamente strutture e pattern in dati senza etichette."
+  },
+  {
+    q: "Cos'è la \"context window\" (finestra di contesto) in un LLM?",
+    opts: [
+      "L'interfaccia grafica del modello AI",
+      "Il numero massimo di lingue supportate dal modello",
+      "La quantità di testo che il modello può leggere e considerare contemporaneamente in una conversazione",
+      "La velocità con cui il modello genera le risposte"
+    ],
+    correct: 2,
+    explanation: "La context window è la quantità massima di testo (token) che un LLM può elaborare contemporaneamente. Determina quanta \"memoria\" il modello ha di una conversazione."
+  },
+  {
+    q: "Cosa sono le \"allucinazioni\" nell'AI?",
+    opts: [
+      "Immagini generate in modo creativo dall'AI",
+      "Errori di connessione al server del modello AI",
+      "La capacità dell'AI di immaginare scenari futuri",
+      "Risposte false o prive di fondamento presentate dal modello come sicure e plausibili"
+    ],
+    correct: 3,
+    explanation: "Le allucinazioni sono un problema critico degli LLM: il modello genera informazioni false o inventate presentandole con sicurezza, come se fossero vere."
+  },
+  {
+    q: "L'AI Act dell'Unione Europea classifica i sistemi AI in quante categorie di rischio?",
+    opts: [
+      "2 (basso e alto)",
+      "3 (minimo, medio, alto)",
+      "4 (inaccettabile, alto, limitato, minimo)",
+      "5 (nessuno, basso, medio, alto, critico)"
+    ],
+    correct: 2,
+    explanation: "L'AI Act UE prevede 4 livelli di rischio: inaccettabile (vietato), alto rischio (soggetto a obblighi stringenti), rischio limitato e rischio minimo."
+  },
+  {
+    q: "Qual è la differenza principale tra AI generativa e AI predittiva?",
+    opts: [
+      "L'AI generativa crea nuovi contenuti (testi, immagini, video); l'AI predittiva analizza dati storici per prevedere eventi futuri",
+      "L'AI generativa è più veloce dell'AI predittiva",
+      "L'AI predittiva crea nuovi contenuti; l'AI generativa analizza dati storici",
+      "Non c'è differenza, sono la stessa cosa"
+    ],
+    correct: 0,
+    explanation: "L'AI generativa produce nuovi contenuti originali. L'AI predittiva analizza dati storici per fare previsioni su eventi futuri."
+  },
+  {
+    q: "Cosa si intende per \"Prompt Engineering\"?",
+    opts: [
+      "La progettazione hardware dei chip per AI",
+      "L'arte di formulare istruzioni efficaci per guidare l'AI verso risposte specifiche e pertinenti",
+      "Un metodo per velocizzare l'addestramento dei modelli",
+      "Il processo di installazione di un modello AI"
+    ],
+    correct: 1,
+    explanation: "Il Prompt Engineering è la disciplina che studia come formulare istruzioni e domande in modo efficace per ottenere risposte migliori da un modello AI."
+  },
+  {
+    q: "Qual è uno dei principali rischi etici legati all'AI evidenziati nel corso?",
+    opts: [
+      "L'AI consuma troppa energia elettrica per funzionare",
+      "I modelli AI possono riflettere bias presenti nei dati di addestramento, portando a discriminazioni di genere, razziali o culturali",
+      "L'AI non è in grado di tradurre testi in lingue diverse",
+      "I modelli AI sono troppo costosi per le piccole imprese"
+    ],
+    correct: 1,
+    explanation: "Il bias algoritmico è uno dei rischi etici più rilevanti: i modelli addestrati su dati distorti possono perpetuare o amplificare discriminazioni di genere, razziali o culturali."
+  }
+];
+
+let cur = 0, selected = null, answered = false, scores = [], userAnswers = [];
+
+function render() {
+  const q = Qs[cur];
+  document.getElementById('pbar').style.width = ((cur + 1) / Qs.length * 100) + '%';
+  document.getElementById('q-counter').textContent = `Domanda ${cur + 1} di ${Qs.length}`;
+  document.getElementById('q-score').textContent = scores.filter(Boolean).length + ' corrette';
+  document.getElementById('q-text').textContent = q.q;
+  const letters = ['A', 'B', 'C', 'D'];
+  document.getElementById('options').innerHTML = q.opts.map((o, i) =>
+    `<div class="opt" id="opt${i}" onclick="selectOpt(${i})">
+      <div class="opt-letter">${letters[i]}</div>
+      <div class="opt-label">${o}</div>
+    </div>`
+  ).join('');
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('btn-confirm').style.display = '';
+  document.getElementById('btn-confirm').disabled = true;
+  document.getElementById('btn-next').style.display = 'none';
+  selected = null; answered = false;
+}
+
+function selectOpt(i) {
+  if (answered) return;
+  selected = i;
+  document.querySelectorAll('.opt').forEach((el, idx) => {
+    el.className = 'opt' + (idx === i ? ' selected' : '');
+  });
+  document.getElementById('btn-confirm').disabled = false;
+}
+
+function confirmAnswer() {
+  if (selected === null || answered) return;
+  answered = true;
+  const q = Qs[cur];
+  const isCorrect = selected === q.correct;
+  scores.push(isCorrect ? 1 : 0);
+  userAnswers.push(selected);
+  document.getElementById('q-score').textContent = scores.filter(Boolean).length + ' corrette';
+  document.querySelectorAll('.opt').forEach((el, idx) => {
+    el.className = 'opt' + (idx === q.correct ? ' correct' : (idx === selected && !isCorrect ? ' wrong' : ''));
+  });
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback ' + (isCorrect ? 'correct' : 'wrong');
+  fb.textContent = (isCorrect ? '✓ Corretto! ' : '✗ Non corretto. ') + q.explanation;
+  document.getElementById('btn-confirm').style.display = 'none';
+  if (cur < Qs.length - 1) {
+    document.getElementById('btn-next').style.display = '';
+  } else {
+    setTimeout(showResult, 800);
+  }
+}
+
+function nextQ() { cur++; render(); }
+
+function showResult() {
+  document.getElementById('quiz-screen').style.display = 'none';
+  const s = scores.reduce((a, b) => a + b, 0);
+  document.getElementById('final-score').textContent = s;
+  const msgs = [
+    [10, 'Risultato perfetto!', 'Hai risposto correttamente a tutte le domande. Ottimo lavoro!'],
+    [7, 'Ottimo risultato!', 'Hai una buona padronanza degli argomenti del corso.'],
+    [5, 'Risultato sufficiente.', 'Ci sono ancora alcuni concetti da rivedere.'],
+    [0, 'Da rivedere.', 'Ti consigliamo di rileggere il materiale del corso.']
+  ];
+  const [, msg, sub] = msgs.find(([t]) => s >= t);
+  document.getElementById('result-msg').textContent = msg;
+  document.getElementById('result-sub').textContent = sub;
+  document.getElementById('review-list').innerHTML = Qs.map((q, i) => {
+    const ok = userAnswers[i] === q.correct;
+    return `<div class="review-item">
+      <div class="review-q">${i + 1}. ${q.q}</div>
+      <div class="review-a ${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'} ${q.opts[userAnswers[i]]}</div>
+      ${!ok ? `<div class="review-correct">Risposta corretta: ${q.opts[q.correct]}</div>` : ''}
+    </div>`;
+  }).join('');
+  document.getElementById('result-screen').style.display = 'block';
+}
+
+function restart() {
+  cur = 0; scores = []; userAnswers = [];
+  document.getElementById('result-screen').style.display = 'none';
+  document.getElementById('quiz-screen').style.display = 'block';
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
